@@ -18,7 +18,7 @@ namespace AdventurerInNeed {
         public DalamudPluginInterface PluginInterface { get; private set; }
         public AdventurerInNeedConfig PluginConfig { get; private set; }
 
-        private bool drawConfigWindow = true;
+        private bool drawConfigWindow = false;
 
         public List<ContentRoulette> RouletteList;
 
@@ -62,6 +62,9 @@ namespace AdventurerInNeed {
                 return;
             }
 
+#if DEBUG
+            drawConfigWindow = true;
+#endif
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
             RouletteList = pluginInterface.Data.GetExcelSheet<ContentRoulette>().ToList();
             cfPreferredRoleChangeHook = new Hook<CfPreferredRoleChangeDelegate>(cfPreferredRolePtr, new CfPreferredRoleChangeDelegate(CfPreferredRoleChangeDetour));
