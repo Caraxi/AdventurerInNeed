@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.Remoting.Messaging;
 using Dalamud;
 
 namespace AdventurerInNeed {
@@ -24,7 +23,7 @@ namespace AdventurerInNeed {
         [NonSerialized]
         private AdventurerInNeed plugin;
 
-        [NonSerialized] private bool showWebhookWindow = false;
+        [NonSerialized] private bool showWebhookWindow;
 
         public Dictionary<uint, RouletteConfig> Roulettes { get; set; } = new Dictionary<uint, RouletteConfig>();
 
@@ -163,9 +162,9 @@ namespace AdventurerInNeed {
 
 
             if (showWebhookWindow) {
-                ImGui.Begin("Adventurer in Need: Webhooks", ref showWebhookWindow);
+                ImGui.Begin($"{plugin.Name}: Webhooks", ref showWebhookWindow);
 
-                ImGui.TextWrapped("Add webhook urls here to have Adveturer in Need send alerts somewhere else, like discord.");
+                ImGui.TextWrapped($"Add webhook urls here to have {plugin.Name} send alerts somewhere else, like discord.");
 
                 ImGui.TextColored(new Vector4(0.5f, 0.5f, 1f, 1f), "Discord Webhook Guide");
                 if (ImGui.IsItemHovered()) {
@@ -195,7 +194,5 @@ namespace AdventurerInNeed {
 
             return drawConfig;
         }
-
-        
     }
 }

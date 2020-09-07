@@ -18,7 +18,7 @@ namespace AdventurerInNeed {
         public DalamudPluginInterface PluginInterface { get; private set; }
         public AdventurerInNeedConfig PluginConfig { get; private set; }
 
-        private bool drawConfigWindow = false;
+        private bool drawConfigWindow;
 
         public List<ContentRoulette> RouletteList;
 
