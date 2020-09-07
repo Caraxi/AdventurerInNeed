@@ -65,6 +65,11 @@ namespace AdventurerInNeed {
 #if DEBUG
             drawConfigWindow = true;
 #endif
+
+            PluginInterface.UiBuilder.OnOpenConfigUi += (sender, args) => {
+                this.drawConfigWindow = true;
+            };
+
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
             RouletteList = pluginInterface.Data.GetExcelSheet<ContentRoulette>().ToList();
             cfPreferredRoleChangeHook = new Hook<CfPreferredRoleChangeDelegate>(cfPreferredRolePtr, new CfPreferredRoleChangeDelegate(CfPreferredRoleChangeDetour));
