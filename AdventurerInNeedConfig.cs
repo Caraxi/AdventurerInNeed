@@ -119,38 +119,40 @@ namespace AdventurerInNeed {
 
             ImGui.Separator();
 
-            foreach (var r in plugin.RouletteList.Where(r => r.ContentRouletteRoleBonus.Row > 0)) {
-                var rCfg = Roulettes.ContainsKey(r.RowId) ? Roulettes[r.RowId] : new RouletteConfig();
-                modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
-                ImGui.NextColumn();
+            if (plugin.RouletteList != null) {
+                foreach (var r in plugin.RouletteList.Where(r => r != null && r.ContentRouletteRoleBonus != null && r.ContentRouletteRoleBonus.Row > 0)) {
+                    var rCfg = Roulettes.ContainsKey(r.RowId) ? Roulettes[r.RowId] : new RouletteConfig();
+                    modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
+                    ImGui.NextColumn();
 
-                var name = pluginInterface.ClientState.ClientLanguage switch {
-                    ClientLanguage.English => r.Name.Replace("Duty Roulette: ", ""),
-                    ClientLanguage.French => r.Name.Replace("Mission aléatoire: ", ""),
-                    ClientLanguage.German => r.Name.Replace("Zufallsinhalt: ", ""),
-                    ClientLanguage.Japanese => r.Name.Replace("コンテンツルーレット：", ""),
-                    _ => r.Name
-                };
+                    var name = pluginInterface.ClientState.ClientLanguage switch {
+                        ClientLanguage.English => r.Name.Replace("Duty Roulette: ", ""),
+                        ClientLanguage.French => r.Name.Replace("Mission aléatoire: ", ""),
+                        ClientLanguage.German => r.Name.Replace("Zufallsinhalt: ", ""),
+                        ClientLanguage.Japanese => r.Name.Replace("コンテンツルーレット：", ""),
+                        _ => r.Name
+                    };
 
-                ImGui.Text(name);
-                ImGui.NextColumn();
-                modified = ImGui.Checkbox($"###rouletteTankEnabled{r.RowId}", ref rCfg.Tank) || modified;
-                ImGui.NextColumn();
-                modified = ImGui.Checkbox($"###rouletteHealerEnabled{r.RowId}", ref rCfg.Healer) || modified;
-                ImGui.NextColumn();
-                modified = ImGui.Checkbox($"###rouletteDPSEnabled{r.RowId}", ref rCfg.DPS) || modified;
-                ImGui.NextColumn();
-                
-                if (plugin.LastPreferredRoleList != null) {
-                    var currentRole = plugin.LastPreferredRoleList.Get(r.ContentRouletteRoleBonus.Row);
-                    ImGui.Text(currentRole.ToString());
+                    ImGui.Text(name);
+                    ImGui.NextColumn();
+                    modified = ImGui.Checkbox($"###rouletteTankEnabled{r.RowId}", ref rCfg.Tank) || modified;
+                    ImGui.NextColumn();
+                    modified = ImGui.Checkbox($"###rouletteHealerEnabled{r.RowId}", ref rCfg.Healer) || modified;
+                    ImGui.NextColumn();
+                    modified = ImGui.Checkbox($"###rouletteDPSEnabled{r.RowId}", ref rCfg.DPS) || modified;
+                    ImGui.NextColumn();
+
+                    if (plugin.LastPreferredRoleList != null) {
+                        var currentRole = plugin.LastPreferredRoleList.Get(r.ContentRouletteRoleBonus.Row);
+                        ImGui.Text(currentRole.ToString());
+                    }
+
+                    ImGui.NextColumn();
+
+                    Roulettes[r.RowId] = rCfg;
                 }
-
-                ImGui.NextColumn();
-
-                Roulettes[r.RowId] = rCfg;
             }
-
+            
             ImGui.Columns(1);
 
             ImGui.End();
