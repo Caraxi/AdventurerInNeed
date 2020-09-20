@@ -53,7 +53,8 @@ namespace AdventurerInNeed {
 
             var modified = false;
 
-            ImGui.SetNextWindowSize(new Vector2(360 * scale, 350), ImGuiCond.Appearing);
+            ImGui.SetNextWindowSize(new Vector2(360 * scale, 350), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSizeConstraints(new Vector2(360 * scale, 350), new Vector2(560 * scale, 650));
             ImGui.Begin($"{plugin.Name} Config", ref drawConfig, ImGuiWindowFlags.NoCollapse);
 
 #if DEBUG
