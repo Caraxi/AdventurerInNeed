@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Dalamud;
+using Dalamud.Game.Chat;
 
 namespace AdventurerInNeed {
     public class RouletteConfig {
@@ -35,6 +36,7 @@ namespace AdventurerInNeed {
         public bool InGameAlert { get; set; }
         public bool WebhookAlert { get; set; }
         public List<string> Webhooks { get; set; } = new List<string>();
+        public XivChatType ChatType { get; set; } = XivChatType.SystemMessage;
 
 
         public void Init(AdventurerInNeed plugin, DalamudPluginInterface pluginInterface) {
@@ -83,6 +85,28 @@ namespace AdventurerInNeed {
             if (ImGui.Checkbox("Send alerts in game chat.", ref inGameAlerts)) {
                 InGameAlert = inGameAlerts;
                 Save();
+            }
+
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(150);
+
+            var selectedDetails = ChatType.GetDetails();
+
+            if (ImGui.BeginCombo("###chatType", ChatType == XivChatType.None ? "Any" : (selectedDetails == null ? ChatType.ToString() : selectedDetails.FancyName))) {
+
+                foreach (var chatType in ((XivChatType[]) Enum.GetValues(typeof(XivChatType)))) {
+
+                    var details = chatType.GetDetails();
+
+                    if (ImGui.Selectable(chatType == XivChatType.None ? "Any" : (details == null ? chatType.ToString() : details.FancyName), chatType == ChatType)) {
+                        ChatType = chatType;
+                        Save();
+                    }
+
+                    if (chatType == ChatType) ImGui.SetItemDefaultFocus();
+                }
+
+                ImGui.EndCombo();
             }
 
             var webhookAlerts = WebhookAlert;

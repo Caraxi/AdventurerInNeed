@@ -176,6 +176,11 @@ namespace AdventurerInNeed {
                     MessageBytes = sestring.Encode()
                 };
 
+                if (PluginConfig.ChatType != XivChatType.None) {
+                    xivChat.Type = PluginConfig.ChatType;
+                    xivChat.Name = this.Name;
+                }
+
                 PluginInterface.Framework.Gui.Chat.PrintChat(xivChat);
             }
 
