@@ -1,11 +1,12 @@
 ﻿using Lumina.Data;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
+using Lumina.Text;
 
 namespace AdventurerInNeed {
     [Sheet("ContentRoulette")]
     public class ContentRoulette : IExcelRow {
-        public string Name;
+        public SeString Name;
         public LazyRow<ContentRouletteRoleBonus> ContentRouletteRoleBonus;
 
         public uint RowId { get; set; }
@@ -15,7 +16,7 @@ namespace AdventurerInNeed {
             RowId = parser.Row;
             SubRowId = parser.SubRow;
 
-            Name = parser.ReadColumn<string>(0);
+            Name = parser.ReadColumn<SeString>(0);
             ContentRouletteRoleBonus = new LazyRow<ContentRouletteRoleBonus>(lumina, parser.ReadColumn<byte>(15), language);
         }
     }

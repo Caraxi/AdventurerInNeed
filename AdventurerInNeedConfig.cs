@@ -150,10 +150,10 @@ namespace AdventurerInNeed {
                     ImGui.NextColumn();
 
                     var name = pluginInterface.ClientState.ClientLanguage switch {
-                        ClientLanguage.English => r.Name.Replace("Duty Roulette: ", ""),
-                        ClientLanguage.French => r.Name.Replace("Mission aléatoire: ", ""),
-                        ClientLanguage.German => r.Name.Replace("Zufallsinhalt: ", ""),
-                        ClientLanguage.Japanese => r.Name.Replace("コンテンツルーレット：", ""),
+                        ClientLanguage.English => r.Name.ToString().Replace("Duty Roulette: ", ""),
+                        ClientLanguage.French => r.Name.ToString().Replace("Mission aléatoire: ", ""),
+                        ClientLanguage.German => r.Name.ToString().Replace("Zufallsinhalt: ", ""),
+                        ClientLanguage.Japanese => r.Name.ToString().Replace("コンテンツルーレット：", ""),
                         _ => r.Name
                     };
 
