@@ -149,15 +149,7 @@ namespace AdventurerInNeed {
                     modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
                     ImGui.NextColumn();
 
-                    var name = pluginInterface.ClientState.ClientLanguage switch {
-                        ClientLanguage.English => r.Name.ToString().Replace("Duty Roulette: ", ""),
-                        ClientLanguage.French => r.Name.ToString().Replace("Mission aléatoire: ", ""),
-                        ClientLanguage.German => r.Name.ToString().Replace("Zufallsinhalt: ", ""),
-                        ClientLanguage.Japanese => r.Name.ToString().Replace("コンテンツルーレット：", ""),
-                        _ => r.Name
-                    };
-
-                    ImGui.Text(name);
+                    ImGui.Text(r.Name);
                     ImGui.NextColumn();
                     modified = ImGui.Checkbox($"###rouletteTankEnabled{r.RowId}", ref rCfg.Tank) || modified;
                     ImGui.NextColumn();

@@ -16,8 +16,8 @@ namespace AdventurerInNeed {
             RowId = parser.Row;
             SubRowId = parser.SubRow;
 
-            Name = parser.ReadColumn<SeString>(0);
-            ContentRouletteRoleBonus = new LazyRow<ContentRouletteRoleBonus>(lumina, parser.ReadColumn<byte>(15), language);
+            Name = parser.ReadColumn<SeString>(1);
+            ContentRouletteRoleBonus = new LazyRow<ContentRouletteRoleBonus>(lumina, parser.ReadColumn<byte>(16), language);
         }
     }
 }

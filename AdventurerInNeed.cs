@@ -84,7 +84,7 @@ namespace AdventurerInNeed {
             using var wc = new WebClient();
             
             while (!webhookCancellationTokenSource.IsCancellationRequested) {
-                Thread.Sleep(1000);
+                webhookCancellationTokenSource.Token.WaitHandle.WaitOne(1000);
                 if (webhookCancellationTokenSource.IsCancellationRequested) {
                     break;
                 }
