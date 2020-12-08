@@ -163,7 +163,7 @@ namespace AdventurerInNeed {
                     new TextPayload(roulette.Name),
                     new UIForegroundPayload(PluginInterface.Data, 0),
                     new TextPayload(" needs a "),
-                    new IconPayload((uint) (82 + role)),
+                    new IconPayload((uint) (81 + role)),
                     new UIForegroundPayload(PluginInterface.Data, roleForegroundColor),
                     new TextPayload(role.ToString()),
                     new UIForegroundPayload(PluginInterface.Data, 0),
