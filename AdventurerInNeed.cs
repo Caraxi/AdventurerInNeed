@@ -6,11 +6,12 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Game.Chat;
-using Dalamud.Game.Chat.SeStringHandling;
-using Dalamud.Game.Chat.SeStringHandling.Payloads;
+using Dalamud.Game.Text;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using Dalamud.Plugin;
+using Lumina.Excel.GeneratedSheets;
 
 namespace AdventurerInNeed {
     public class AdventurerInNeed : IDalamudPlugin {
@@ -92,6 +93,7 @@ namespace AdventurerInNeed {
                 if (webhookMessageQueue.Count > 0) {
                     var (url, data) = webhookMessageQueue.Dequeue();
                     wc.UploadValues(url, data);
+                    webhookCancellationTokenSource.Token.WaitHandle.WaitOne(1000);
                 }
             }
         }
@@ -158,22 +160,29 @@ namespace AdventurerInNeed {
                     _ => 0,
                 };
 
+                var icon = role switch {
+                    PreferredRole.Tank => BitmapFontIcon.Tank,
+                    PreferredRole.Healer => BitmapFontIcon.Healer,
+                    PreferredRole.DPS => BitmapFontIcon.DPS,
+                    _ => BitmapFontIcon.Warning
+                };
+
                 var payloads = new Payload[] {
                     new UIForegroundPayload(PluginInterface.Data, 500),
                     new TextPayload(roulette.Name),
                     new UIForegroundPayload(PluginInterface.Data, 0),
                     new TextPayload(" needs a "),
-                    new IconPayload((uint) (81 + role)),
+                    new IconPayload(icon),
                     new UIForegroundPayload(PluginInterface.Data, roleForegroundColor),
                     new TextPayload(role.ToString()),
                     new UIForegroundPayload(PluginInterface.Data, 0),
                     new TextPayload("."),
                 };
 
-                var sestring = new SeString(payloads);
+                var seString = new SeString(payloads);
 
                 var xivChat = new XivChatEntry() {
-                    MessageBytes = sestring.Encode()
+                    MessageBytes = seString.Encode()
                 };
 
                 if (PluginConfig.ChatType != XivChatType.None) {

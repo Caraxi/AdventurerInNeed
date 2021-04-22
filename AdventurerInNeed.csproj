@@ -15,7 +15,7 @@
     </PropertyGroup>
     <PropertyGroup Label="Feature">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>1.1.2.1</Version>
+        <Version>1.1.2.2</Version>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
@@ -26,48 +26,28 @@
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="PropertyChanged.Fody" Version="2.6.1" />
-    </ItemGroup>
-    <ItemGroup>
 		<Reference Include="Dalamud">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
+            <Private>false</Private>
+			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
 		</Reference>
 		<Reference Include="ImGui.NET">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
+            <Private>false</Private>
+			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
 		</Reference>
 		<Reference Include="ImGuiScene">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\ImGuiScene.dll</HintPath>
-		</Reference>
-		<Reference Include="EasyHook">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\EasyHook.dll</HintPath>
-		</Reference>
-		<Reference Include="Serilog">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Serilog.dll</HintPath>
-		</Reference>
-		<Reference Include="Newtonsoft.Json">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Newtonsoft.Json.dll</HintPath>
-		</Reference>
-		<Reference Include="JetBrains.Annotations">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\JetBrains.Annotations.dll</HintPath>
-		</Reference>
-		<Reference Include="SharpDX.Desktop">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\SharpDX.Desktop.dll</HintPath>
-		</Reference>
-		<Reference Include="Serilog.Sinks.File">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Serilog.Sinks.File.dll</HintPath>
-		</Reference>
-		<Reference Include="Serilog.Sinks.Async">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Serilog.Sinks.Async.dll</HintPath>
+            <Private>false</Private>
+			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
 		</Reference>
 		<Reference Include="Lumina">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Lumina.dll</HintPath>
+            <Private>false</Private>
+			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
 		</Reference>
 		<Reference Include="Lumina.Excel">
-			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\Lumina.Excel.dll</HintPath>
+            <Private>false</Private>
+			<HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
 		</Reference>
-		<Reference Include="System.Windows.Forms" />
     </ItemGroup>
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="cd $(ProjectDir)$(OutDir)&#xD;&#xA;for %25%25i in (*.*) do if not &quot;%25%25i&quot;==&quot;$(TargetName).dll&quot; if not &quot;%25%25i&quot;==&quot;$(TargetName).pdb&quot; del /q &quot;%25%25i&quot;&#xD;&#xA;if $(ConfigurationName) == Release (&#xD;&#xA;  powershell New-Item -ItemType Directory -Force -Path '$(ProjectDir)Publish'&#xD;&#xA;  powershell Compress-Archive -Path '$(TargetPath)','$(ProjectDir)$(ProjectName).json','$(ProjectDir)$(OutDir)$(TargetName).pdb' -DestinationPath '$(ProjectDir)Publish\latest.zip' -Force&#xD;&#xA;  echo F|xcopy &quot;$(ProjectDir)$(ProjectName).json&quot; &quot;$(ProjectDir)Publish\$(ProjectName).json&quot; /Y /F&#xD;&#xA;)" />
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='Release'">
+        <Exec Command="powershell -Command &quot;New-Item -ItemType Directory -Force -Path '$(ProjectDir)Publish'; $a=Get-Item '$(TargetDir)AdventurerInNeed.dll'; $jsonTemplate=Get-Content '$(ProjectDir)\$(ProjectName).template.json' | ConvertFrom-Json; $jsonTemplate.AssemblyVersion=$a.VersionInfo.FileVersion; $jsonTemplate.Description = $jsonTemplate.Description -join '\n'; ($jsonTemplate | ConvertTo-Json).Replace('\\n','\n') | Out-File '$(ProjectDir)\Publish\$(ProjectName).json' -Encoding utf8;Compress-Archive -Path '$(ProjectDir)\Publish\$(ProjectName).json','$(TargetDir)\*' -DestinationPath '$(ProjectDir)Publish\latest.zip' -Force&quot;" />
     </Target>
 </Project>

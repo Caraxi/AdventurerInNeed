@@ -6,8 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using Dalamud;
-using Dalamud.Game.Chat;
+using Dalamud.Game.Text;
 
 namespace AdventurerInNeed {
     public class RouletteConfig {
@@ -188,7 +187,7 @@ namespace AdventurerInNeed {
                     ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 }
 
-                if (ImGui.IsItemClicked(0)) {
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
                     Process.Start("https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks");
                 }
 
