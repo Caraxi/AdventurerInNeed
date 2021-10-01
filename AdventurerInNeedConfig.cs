@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Text;
+using Dalamud.Logging;
 
 namespace AdventurerInNeed {
     public class RouletteConfig {
@@ -17,9 +18,6 @@ namespace AdventurerInNeed {
     }
 
     public class AdventurerInNeedConfig : IPluginConfiguration {
-        [NonSerialized]
-        private DalamudPluginInterface pluginInterface;
-
         [NonSerialized]
         private AdventurerInNeed plugin;
 
@@ -38,13 +36,12 @@ namespace AdventurerInNeed {
         public XivChatType ChatType { get; set; } = XivChatType.SystemMessage;
 
 
-        public void Init(AdventurerInNeed plugin, DalamudPluginInterface pluginInterface) {
+        public void Init(AdventurerInNeed plugin) {
             this.plugin = plugin;
-            this.pluginInterface = pluginInterface;
         }
 
         public void Save() {
-            pluginInterface.SavePluginConfig(this);
+            AdventurerInNeed.PluginInterface.SavePluginConfig(this);
         }
 
         public bool DrawConfigUI() {

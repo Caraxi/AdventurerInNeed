@@ -6,17 +6,23 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Data;
+using Dalamud.Game;
+using Dalamud.Game.Command;
+using Dalamud.Game.Gui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
+using Dalamud.IoC;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 
 namespace AdventurerInNeed {
     public class AdventurerInNeed : IDalamudPlugin {
         public string Name => "Adventurer in Need";
-        public DalamudPluginInterface PluginInterface { get; private set; }
+
         public AdventurerInNeedConfig PluginConfig { get; private set; }
 
         private bool drawConfigWindow;
@@ -34,8 +40,14 @@ namespace AdventurerInNeed {
         private Task webhookTask;
         private CancellationTokenSource webhookCancellationTokenSource;
 
+        [PluginService] public static SigScanner SigScanner { get; private set; } = null!;
+        [PluginService] public static DataManager Data { get; private set; } = null!;
+        [PluginService] public static ChatGui ChatGui { get; private set; } = null!;
+        [PluginService] public static CommandManager CommandManager { get; private set; } = null!;
+        [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
+
         public void Dispose() {
-            PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
+            PluginInterface.UiBuilder.Draw -= this.BuildUI;
             cfPreferredRoleChangeHook?.Disable();
             cfPreferredRoleChangeHook?.Dispose();
             webhookCancellationTokenSource?.Cancel();
@@ -49,14 +61,13 @@ namespace AdventurerInNeed {
             RemoveCommands();
         }
 
-        public void Initialize(DalamudPluginInterface pluginInterface) {
-            this.PluginInterface = pluginInterface;
-            this.PluginConfig = (AdventurerInNeedConfig) pluginInterface.GetPluginConfig() ?? new AdventurerInNeedConfig();
-            this.PluginConfig.Init(this, pluginInterface);
+        public AdventurerInNeed() {
+            this.PluginConfig = (AdventurerInNeedConfig) PluginInterface.GetPluginConfig() ?? new AdventurerInNeedConfig();
+            this.PluginConfig.Init(this);
 
             PluginConfig.Webhooks.RemoveAll(string.IsNullOrEmpty);
 
-            var cfPreferredRolePtr = PluginInterface.TargetModuleScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 6C");
+            var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 6C");
 
             if (cfPreferredRolePtr == IntPtr.Zero) {
                 PluginLog.LogError("Failed to hook the cfPreferredRoleChange method.");
@@ -67,16 +78,16 @@ namespace AdventurerInNeed {
             drawConfigWindow = true;
 #endif
 
-            PluginInterface.UiBuilder.OnOpenConfigUi += (sender, args) => {
+            PluginInterface.UiBuilder.OpenConfigUi += () => {
                 this.drawConfigWindow = true;
             };
 
-            RouletteList = pluginInterface.Data.GetExcelSheet<ContentRoulette>().ToList();
+            RouletteList = Data.GetExcelSheet<ContentRoulette>().ToList();
             cfPreferredRoleChangeHook = new Hook<CfPreferredRoleChangeDelegate>(cfPreferredRolePtr, new CfPreferredRoleChangeDelegate(CfPreferredRoleChangeDetour));
             cfPreferredRoleChangeHook.Enable();
             webhookCancellationTokenSource = new CancellationTokenSource();
             webhookTask = Task.Run(WebhookTaskAction);
-            PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
+            PluginInterface.UiBuilder.Draw += this.BuildUI;
 
             SetupCommands();
         }
@@ -168,21 +179,21 @@ namespace AdventurerInNeed {
                 };
 
                 var payloads = new Payload[] {
-                    new UIForegroundPayload(PluginInterface.Data, 500),
+                    new UIForegroundPayload(500),
                     new TextPayload(roulette.Name),
-                    new UIForegroundPayload(PluginInterface.Data, 0),
+                    new UIForegroundPayload(0),
                     new TextPayload(" needs a "),
                     new IconPayload(icon),
-                    new UIForegroundPayload(PluginInterface.Data, roleForegroundColor),
+                    new UIForegroundPayload(roleForegroundColor),
                     new TextPayload(role.ToString()),
-                    new UIForegroundPayload(PluginInterface.Data, 0),
+                    new UIForegroundPayload(0),
                     new TextPayload("."),
                 };
 
                 var seString = new SeString(payloads);
 
                 var xivChat = new XivChatEntry() {
-                    MessageBytes = seString.Encode()
+                    Message = seString
                 };
 
                 if (PluginConfig.ChatType != XivChatType.None) {
@@ -190,7 +201,7 @@ namespace AdventurerInNeed {
                     xivChat.Name = this.Name;
                 }
 
-                PluginInterface.Framework.Gui.Chat.PrintChat(xivChat);
+                ChatGui.PrintChat(xivChat);
             }
 
             if (PluginConfig.WebhookAlert && PluginConfig.Webhooks.Count > 0) {
@@ -202,7 +213,7 @@ namespace AdventurerInNeed {
         }
 
         public void SetupCommands() {
-            PluginInterface.CommandManager.AddHandler("/pbonus", new Dalamud.Game.Command.CommandInfo(OnConfigCommandHandler) {
+            CommandManager.AddHandler("/pbonus", new Dalamud.Game.Command.CommandInfo(OnConfigCommandHandler) {
                 HelpMessage = $"Open config window for {this.Name}",
                 ShowInHelp = true
             });
@@ -213,7 +224,7 @@ namespace AdventurerInNeed {
         }
 
         public void RemoveCommands() {
-            PluginInterface.CommandManager.RemoveHandler("/pbonus");
+            CommandManager.RemoveHandler("/pbonus");
         }
 
         private void BuildUI() {
