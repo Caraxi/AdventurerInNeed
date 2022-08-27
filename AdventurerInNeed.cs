@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,7 +34,7 @@ namespace AdventurerInNeed {
 
         internal PreferredRoleList LastPreferredRoleList;
 
-        private readonly Queue<(string url, NameValueCollection data)> webhookMessageQueue = new Queue<(string url, NameValueCollection data)>();
+        private readonly Queue<(string url, IEnumerable<KeyValuePair<string, string>> data)> webhookMessageQueue = new();
 
         private Task webhookTask;
         private CancellationTokenSource webhookCancellationTokenSource;
@@ -83,7 +82,7 @@ namespace AdventurerInNeed {
             };
 
             RouletteList = Data.GetExcelSheet<ContentRoulette>().ToList();
-            cfPreferredRoleChangeHook = new Hook<CfPreferredRoleChangeDelegate>(cfPreferredRolePtr, new CfPreferredRoleChangeDelegate(CfPreferredRoleChangeDetour));
+            cfPreferredRoleChangeHook = Hook<CfPreferredRoleChangeDelegate>.FromAddress(cfPreferredRolePtr, new CfPreferredRoleChangeDelegate(CfPreferredRoleChangeDetour));
             cfPreferredRoleChangeHook.Enable();
             webhookCancellationTokenSource = new CancellationTokenSource();
             webhookTask = Task.Run(WebhookTaskAction);
@@ -93,7 +92,7 @@ namespace AdventurerInNeed {
         }
 
         private void WebhookTaskAction() {
-            using var wc = new WebClient();
+            using var client = new HttpClient();
             
             while (!webhookCancellationTokenSource.IsCancellationRequested) {
                 webhookCancellationTokenSource.Token.WaitHandle.WaitOne(1000);
@@ -103,7 +102,9 @@ namespace AdventurerInNeed {
 
                 if (webhookMessageQueue.Count > 0) {
                     var (url, data) = webhookMessageQueue.Dequeue();
-                    wc.UploadValues(url, data);
+                    var message = new HttpRequestMessage(HttpMethod.Post, url);
+                    message.Content = new FormUrlEncodedContent(data);
+                    client.Send(message);
                     webhookCancellationTokenSource.Token.WaitHandle.WaitOne(1000);
                 }
             }
@@ -205,7 +206,7 @@ namespace AdventurerInNeed {
             }
 
             if (PluginConfig.WebhookAlert && PluginConfig.Webhooks.Count > 0) {
-                var nvc = new NameValueCollection {{"username", Name}, {"content", $"**{roulette.Name}** needs a **{role}**"}};
+                var nvc = new Dictionary<string, string> {{"username", Name}, {"content", $"**{roulette.Name}** needs a **{role}**"}};
                 foreach (var webhook in PluginConfig.Webhooks) {
                     webhookMessageQueue.Enqueue((webhook, nvc));
                 }
