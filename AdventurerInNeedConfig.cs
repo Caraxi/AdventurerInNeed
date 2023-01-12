@@ -1,9 +1,7 @@
 ﻿using Dalamud.Configuration;
-using Dalamud.Plugin;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Text;
@@ -21,8 +19,6 @@ namespace AdventurerInNeed {
         [NonSerialized]
         private AdventurerInNeed plugin;
 
-        [NonSerialized] private bool showWebhookWindow;
-
         public Dictionary<uint, RouletteConfig> Roulettes { get; set; } = new Dictionary<uint, RouletteConfig>();
 
 #if DEBUG
@@ -31,10 +27,7 @@ namespace AdventurerInNeed {
 
         public int Version { get; set; }
         public bool InGameAlert { get; set; }
-        public bool WebhookAlert { get; set; }
-        public List<string> Webhooks { get; set; } = new List<string>();
         public XivChatType ChatType { get; set; } = XivChatType.SystemMessage;
-
 
         public void Init(AdventurerInNeed plugin) {
             this.plugin = plugin;
@@ -105,17 +98,6 @@ namespace AdventurerInNeed {
                 ImGui.EndCombo();
             }
 
-            var webhookAlerts = WebhookAlert;
-            if (ImGui.Checkbox("Send alerts to webhook.", ref webhookAlerts)) {
-                WebhookAlert = webhookAlerts;
-                Save();
-            }
-
-            ImGui.SameLine();
-            if (ImGui.SmallButton("Setup Webhooks")) {
-                showWebhookWindow = true;
-            }
-
             ImGui.Separator();
             ImGui.Columns(6, "###cols", false);
             ImGui.SetColumnWidth(0, 40f * scale);
@@ -172,38 +154,6 @@ namespace AdventurerInNeed {
             if (modified) {
                 Save();
             }
-
-
-            if (showWebhookWindow) {
-                ImGui.Begin($"{plugin.Name}: Webhooks", ref showWebhookWindow);
-
-                ImGui.TextWrapped($"Add webhook urls here to have {plugin.Name} send alerts somewhere else, like discord.");
-
-                ImGui.TextColored(new Vector4(0.5f, 0.5f, 1f, 1f), "Discord Webhook Guide");
-                if (ImGui.IsItemHovered()) {
-                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                }
-
-                if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
-                    Process.Start("https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks");
-                }
-
-                for (var i = 0; i < Webhooks.Count; i++) {
-                    var url = Webhooks[i];
-                    ImGui.SetNextItemWidth(-1);
-                    if (ImGui.InputText($"###webhook{i}", ref url, 1024)) {
-                        Webhooks[i] = url;
-                        Save();
-                    }
-                }
-
-                if (ImGui.SmallButton("Add Webhook")) {
-                    Webhooks.Add("");
-                }
-
-                ImGui.End();
-            }
-
 
             return drawConfig;
         }

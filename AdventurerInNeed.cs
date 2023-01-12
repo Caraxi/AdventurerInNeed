@@ -34,11 +34,6 @@ namespace AdventurerInNeed {
 
         internal PreferredRoleList LastPreferredRoleList;
 
-        private readonly Queue<(string url, IEnumerable<KeyValuePair<string, string>> data)> webhookMessageQueue = new();
-
-        private Task webhookTask;
-        private CancellationTokenSource webhookCancellationTokenSource;
-
         [PluginService] public static SigScanner SigScanner { get; private set; } = null!;
         [PluginService] public static DataManager Data { get; private set; } = null!;
         [PluginService] public static ChatGui ChatGui { get; private set; } = null!;
@@ -49,22 +44,12 @@ namespace AdventurerInNeed {
             PluginInterface.UiBuilder.Draw -= this.BuildUI;
             cfPreferredRoleChangeHook?.Disable();
             cfPreferredRoleChangeHook?.Dispose();
-            webhookCancellationTokenSource?.Cancel();
-
-            while (webhookTask != null && !webhookTask.IsCompleted) {
-                Thread.Sleep(1);
-            }
-
-            webhookTask?.Dispose();
-            webhookCancellationTokenSource?.Dispose();
             RemoveCommands();
         }
 
         public AdventurerInNeed() {
             this.PluginConfig = (AdventurerInNeedConfig) PluginInterface.GetPluginConfig() ?? new AdventurerInNeedConfig();
             this.PluginConfig.Init(this);
-
-            PluginConfig.Webhooks.RemoveAll(string.IsNullOrEmpty);
 
             var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 6C");
 
@@ -84,30 +69,9 @@ namespace AdventurerInNeed {
             RouletteList = Data.GetExcelSheet<ContentRoulette>().ToList();
             cfPreferredRoleChangeHook = Hook<CfPreferredRoleChangeDelegate>.FromAddress(cfPreferredRolePtr, new CfPreferredRoleChangeDelegate(CfPreferredRoleChangeDetour));
             cfPreferredRoleChangeHook.Enable();
-            webhookCancellationTokenSource = new CancellationTokenSource();
-            webhookTask = Task.Run(WebhookTaskAction);
             PluginInterface.UiBuilder.Draw += this.BuildUI;
 
             SetupCommands();
-        }
-
-        private void WebhookTaskAction() {
-            using var client = new HttpClient();
-            
-            while (!webhookCancellationTokenSource.IsCancellationRequested) {
-                webhookCancellationTokenSource.Token.WaitHandle.WaitOne(1000);
-                if (webhookCancellationTokenSource.IsCancellationRequested) {
-                    break;
-                }
-
-                if (webhookMessageQueue.Count > 0) {
-                    var (url, data) = webhookMessageQueue.Dequeue();
-                    var message = new HttpRequestMessage(HttpMethod.Post, url);
-                    message.Content = new FormUrlEncodedContent(data);
-                    client.Send(message);
-                    webhookCancellationTokenSource.Token.WaitHandle.WaitOne(1000);
-                }
-            }
         }
 
         private IntPtr CfPreferredRoleChangeDetour(IntPtr data) {
@@ -203,13 +167,6 @@ namespace AdventurerInNeed {
                 }
 
                 ChatGui.PrintChat(xivChat);
-            }
-
-            if (PluginConfig.WebhookAlert && PluginConfig.Webhooks.Count > 0) {
-                var nvc = new Dictionary<string, string> {{"username", Name}, {"content", $"**{roulette.Name}** needs a **{role}**"}};
-                foreach (var webhook in PluginConfig.Webhooks) {
-                    webhookMessageQueue.Enqueue((webhook, nvc));
-                }
             }
         }
 
