@@ -51,7 +51,7 @@ namespace AdventurerInNeed {
             this.PluginConfig = (AdventurerInNeedConfig) PluginInterface.GetPluginConfig() ?? new AdventurerInNeedConfig();
             this.PluginConfig.Init(this);
 
-            var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 6C");
+            var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 70 E8 ?? ?? ?? ?? E9");
 
             if (cfPreferredRolePtr == IntPtr.Zero) {
                 PluginLog.LogError("Failed to hook the cfPreferredRoleChange method.");
