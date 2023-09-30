@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Text;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 
 namespace AdventurerInNeed {
     public class RouletteConfig {
@@ -26,6 +28,7 @@ namespace AdventurerInNeed {
 
         public int Version { get; set; }
         public bool InGameAlert { get; set; }
+        public bool IncompleteRouletteOnly { get; set; } = false;
         public XivChatType ChatType { get; set; } = XivChatType.SystemMessage;
 
         public void Init(AdventurerInNeed plugin) {
@@ -43,8 +46,8 @@ namespace AdventurerInNeed {
 
             var modified = false;
 
-            ImGui.SetNextWindowSize(new Vector2(360 * scale, 350), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSizeConstraints(new Vector2(360 * scale, 350), new Vector2(560 * scale, 650));
+            ImGui.SetNextWindowSize(new Vector2(420 * scale, 350), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSizeConstraints(new Vector2(420 * scale, 350), new Vector2(640 * scale, 650));
             ImGui.Begin($"{plugin.Name} Config", ref drawConfig, ImGuiWindowFlags.NoCollapse);
 
 #if DEBUG
@@ -97,15 +100,23 @@ namespace AdventurerInNeed {
                 ImGui.EndCombo();
             }
 
+            var incompleteOnly = IncompleteRouletteOnly;
+            if (ImGui.Checkbox("Alert only for incomplete roulettes", ref incompleteOnly)) {
+                IncompleteRouletteOnly = incompleteOnly;
+                Save();
+            }
+
             ImGui.Separator();
-            ImGui.Columns(6, "###cols", false);
+            ImGui.Columns(7, "###cols", false);
             ImGui.SetColumnWidth(0, 40f * scale);
-            ImGui.SetColumnWidth(1, ImGui.GetWindowWidth() - 240f * scale);
+            ImGui.SetColumnWidth(1, ImGui.GetWindowWidth() - 320f * scale);
             ImGui.SetColumnWidth(2, 40f * scale);
             ImGui.SetColumnWidth(3, 40f * scale);
             ImGui.SetColumnWidth(4, 40f * scale);
             ImGui.SetColumnWidth(5, 80f * scale);
+            ImGui.SetColumnWidth(6, 80f * scale);
 
+            ImGui.Text("Alert");
             ImGui.NextColumn();
             ImGui.Text("Roulette");
             ImGui.NextColumn();
@@ -115,9 +126,12 @@ namespace AdventurerInNeed {
             ImGui.NextColumn();
             ImGui.Text("D");
             ImGui.NextColumn();
+            ImGui.Text("Complete");
+            ImGui.NextColumn();
             ImGui.Text("Current");
             ImGui.NextColumn();
 
+            ImGui.Separator();
             ImGui.Separator();
 
             if (plugin.RouletteList != null) {
@@ -126,7 +140,13 @@ namespace AdventurerInNeed {
                     modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
                     ImGui.NextColumn();
 
-                    ImGui.Text(r.Name);
+                    var name = r.Name.ToDalamudString().TextValue
+                        .Replace("Duty Roulette: ", "")
+                        .Replace("DZufallsinhalt: ", "")
+                        .Replace("Mission aléatoire : ", "")
+                        .Replace("コンテンツルーレット：", "");
+                    
+                    ImGui.Text(name);
                     ImGui.NextColumn();
                     modified = ImGui.Checkbox($"###rouletteTankEnabled{r.RowId}", ref rCfg.Tank) || modified;
                     ImGui.NextColumn();
@@ -135,6 +155,9 @@ namespace AdventurerInNeed {
                     modified = ImGui.Checkbox($"###rouletteDPSEnabled{r.RowId}", ref rCfg.DPS) || modified;
                     ImGui.NextColumn();
 
+                    ImGui.Text(plugin.IsRouletteComplete(r) ? "Yes" : "No");
+                    ImGui.NextColumn();
+                    
                     if (plugin.LastPreferredRoleList != null) {
                         var currentRole = plugin.LastPreferredRoleList.Get(r.ContentRouletteRoleBonus.Row);
                         ImGui.Text(currentRole.ToString());
@@ -143,6 +166,7 @@ namespace AdventurerInNeed {
                     ImGui.NextColumn();
 
                     Roulettes[r.RowId] = rCfg;
+                    ImGui.Separator();
                 }
             }
             

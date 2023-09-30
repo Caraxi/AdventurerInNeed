@@ -11,6 +11,7 @@ using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.GeneratedSheets;
 
 namespace AdventurerInNeed {
@@ -115,6 +116,7 @@ namespace AdventurerInNeed {
 
         internal void ShowAlert(ContentRoulette roulette, RouletteConfig config, PreferredRole role) {
             if (!config.Enabled) return;
+            if (PluginConfig.IncompleteRouletteOnly && IsRouletteComplete(roulette)) return;
 
             var doAlert = role switch {
                 PreferredRole.Tank => config.Tank,
@@ -185,5 +187,12 @@ namespace AdventurerInNeed {
         private void BuildUI() {
             drawConfigWindow = drawConfigWindow && PluginConfig.DrawConfigUI();
         }
+
+        public unsafe bool IsRouletteComplete(ContentRoulette roulette) {
+            if (roulette.RowId > byte.MaxValue) return false;
+            var rouletteController = RouletteController.Instance();
+            return rouletteController->IsRouletteComplete((byte)roulette.RowId);
+        }
+        
     }
 }

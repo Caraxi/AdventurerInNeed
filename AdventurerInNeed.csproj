@@ -29,6 +29,10 @@
             <Private>false</Private>
 			<HintPath>$(DalamudLibPath)\Dalamud.dll</HintPath>
 		</Reference>
+		<Reference Include="FFXIVClientStructs">
+            <Private>false</Private>
+			<HintPath>$(DalamudLibPath)\FFXIVClientStructs.dll</HintPath>
+		</Reference>
 		<Reference Include="ImGui.NET">
             <Private>false</Private>
 			<HintPath>$(DalamudLibPath)\ImGui.NET.dll</HintPath>
