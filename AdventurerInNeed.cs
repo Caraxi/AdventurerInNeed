@@ -116,7 +116,7 @@ namespace AdventurerInNeed {
 
         internal void ShowAlert(ContentRoulette roulette, RouletteConfig config, PreferredRole role) {
             if (!config.Enabled) return;
-            if (PluginConfig.IncompleteRouletteOnly && IsRouletteComplete(roulette)) return;
+            if (config.OnlyIncomplete && IsRouletteComplete(roulette)) return;
 
             var doAlert = role switch {
                 PreferredRole.Tank => config.Tank,

@@ -6,7 +6,6 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Text;
 using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 
 namespace AdventurerInNeed {
     public class RouletteConfig {
@@ -14,13 +13,14 @@ namespace AdventurerInNeed {
         public bool Tank;
         public bool Healer;
         public bool DPS;
+        public bool OnlyIncomplete;
     }
 
     public class AdventurerInNeedConfig : IPluginConfiguration {
         [NonSerialized]
         private AdventurerInNeed plugin;
 
-        public Dictionary<uint, RouletteConfig> Roulettes { get; set; } = new Dictionary<uint, RouletteConfig>();
+        public Dictionary<uint, RouletteConfig> Roulettes { get; set; } = new();
 
 #if DEBUG
         public bool AlwaysShowAlert { get; set; }
@@ -28,7 +28,6 @@ namespace AdventurerInNeed {
 
         public int Version { get; set; }
         public bool InGameAlert { get; set; }
-        public bool IncompleteRouletteOnly { get; set; } = false;
         public XivChatType ChatType { get; set; } = XivChatType.SystemMessage;
 
         public void Init(AdventurerInNeed plugin) {
@@ -100,23 +99,17 @@ namespace AdventurerInNeed {
                 ImGui.EndCombo();
             }
 
-            var incompleteOnly = IncompleteRouletteOnly;
-            if (ImGui.Checkbox("Alert only for incomplete roulettes", ref incompleteOnly)) {
-                IncompleteRouletteOnly = incompleteOnly;
-                Save();
-            }
-
             ImGui.Separator();
             ImGui.Columns(7, "###cols", false);
-            ImGui.SetColumnWidth(0, 40f * scale);
-            ImGui.SetColumnWidth(1, ImGui.GetWindowWidth() - 320f * scale);
+            ImGui.SetColumnWidth(0, 60f * scale);
+            ImGui.SetColumnWidth(1, ImGui.GetWindowWidth() - 340f * scale);
             ImGui.SetColumnWidth(2, 40f * scale);
             ImGui.SetColumnWidth(3, 40f * scale);
             ImGui.SetColumnWidth(4, 40f * scale);
             ImGui.SetColumnWidth(5, 80f * scale);
             ImGui.SetColumnWidth(6, 80f * scale);
 
-            ImGui.Text("Alert");
+            ImGui.Text("Alerts");
             ImGui.NextColumn();
             ImGui.Text("Roulette");
             ImGui.NextColumn();
@@ -137,15 +130,26 @@ namespace AdventurerInNeed {
             if (plugin.RouletteList != null) {
                 foreach (var r in plugin.RouletteList.Where(r => r != null && r.ContentRouletteRoleBonus != null && r.ContentRouletteRoleBonus.Row > 0)) {
                     var rCfg = Roulettes.ContainsKey(r.RowId) ? Roulettes[r.RowId] : new RouletteConfig();
-                    modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
-                    ImGui.NextColumn();
-
+                    
                     var name = r.Name.ToDalamudString().TextValue
                         .Replace("Duty Roulette: ", "")
                         .Replace("DZufallsinhalt: ", "")
                         .Replace("Mission aléatoire : ", "")
                         .Replace("コンテンツルーレット：", "");
                     
+                    modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Enable alerts for '{name}'.");
+                    }
+                    
+                    ImGui.SameLine();
+                    modified = ImGui.Checkbox($"###rouletteIncompleteOnly{r.RowId}", ref rCfg.OnlyIncomplete) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Only show alerts if roulette has not been completed today.");
+                    }
+
+                    ImGui.NextColumn();
+
                     ImGui.Text(name);
                     ImGui.NextColumn();
                     modified = ImGui.Checkbox($"###rouletteTankEnabled{r.RowId}", ref rCfg.Tank) || modified;
