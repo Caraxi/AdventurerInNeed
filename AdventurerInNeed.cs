@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Dalamud.Data;
 using Dalamud.Game;
-using Dalamud.Game.Command;
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
@@ -16,6 +10,7 @@ using Dalamud.Hooking;
 using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 
 namespace AdventurerInNeed {
@@ -34,11 +29,13 @@ namespace AdventurerInNeed {
 
         internal PreferredRoleList LastPreferredRoleList;
 
-        [PluginService] public static SigScanner SigScanner { get; private set; } = null!;
-        [PluginService] public static DataManager Data { get; private set; } = null!;
-        [PluginService] public static ChatGui ChatGui { get; private set; } = null!;
-        [PluginService] public static CommandManager CommandManager { get; private set; } = null!;
+        [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
+        [PluginService] public static IDataManager Data { get; private set; } = null!;
+        [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
+        [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
         [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
+        [PluginService] public static IGameInteropProvider HookProvider { get; private set; } = null!;
+        [PluginService] public static IPluginLog PluginLog { get; private set; } = null!;
 
         public void Dispose() {
             PluginInterface.UiBuilder.Draw -= this.BuildUI;
@@ -54,7 +51,7 @@ namespace AdventurerInNeed {
             var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 70 E8 ?? ?? ?? ?? E9");
 
             if (cfPreferredRolePtr == IntPtr.Zero) {
-                PluginLog.LogError("Failed to hook the cfPreferredRoleChange method.");
+                PluginLog.Error("Failed to hook the cfPreferredRoleChange method.");
                 return;
             }
 
@@ -66,8 +63,8 @@ namespace AdventurerInNeed {
                 this.drawConfigWindow = true;
             };
 
-            RouletteList = Data.GetExcelSheet<ContentRoulette>().ToList();
-            cfPreferredRoleChangeHook = Hook<CfPreferredRoleChangeDelegate>.FromAddress(cfPreferredRolePtr, new CfPreferredRoleChangeDelegate(CfPreferredRoleChangeDetour));
+            RouletteList = Data.GetExcelSheet<ContentRoulette>()!.ToList();
+            cfPreferredRoleChangeHook = HookProvider.HookFromAddress<CfPreferredRoleChangeDelegate>(cfPreferredRolePtr, CfPreferredRoleChangeDetour);
             cfPreferredRoleChangeHook.Enable();
             PluginInterface.UiBuilder.Draw += this.BuildUI;
 
@@ -81,7 +78,7 @@ namespace AdventurerInNeed {
 
         private void UpdatePreferredRoleList(PreferredRoleList preferredRoleList) {
 #if DEBUG
-            PluginLog.Log("Updating Preferred Role List");
+            PluginLog.Info("Updating Preferred Role List");
 #endif
             LastPreferredRoleList ??= preferredRoleList;
 
@@ -94,7 +91,7 @@ namespace AdventurerInNeed {
                     var oldRole = LastPreferredRoleList.Get(roulette.ContentRouletteRoleBonus.Row);
 
 #if DEBUG
-                    PluginLog.Log($"{roulette.Name}: {oldRole} => {role}");
+                    PluginLog.Info($"{roulette.Name}: {oldRole} => {role}");
 
                     if (role != oldRole || PluginConfig.AlwaysShowAlert) {
 #else
@@ -105,7 +102,7 @@ namespace AdventurerInNeed {
 
 #if DEBUG
                 } catch (Exception ex) {
-                    PluginLog.LogError(ex.ToString());
+                    PluginLog.Error(ex.ToString());
 #else
                 } catch {
                     // Ignored
@@ -166,7 +163,7 @@ namespace AdventurerInNeed {
                     xivChat.Name = this.Name;
                 }
 
-                ChatGui.PrintChat(xivChat);
+                ChatGui.Print(xivChat);
             }
         }
 

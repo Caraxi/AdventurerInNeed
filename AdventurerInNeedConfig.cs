@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Text;
-using Dalamud.Logging;
 
 namespace AdventurerInNeed {
     public class RouletteConfig {
@@ -63,7 +62,7 @@ namespace AdventurerInNeed {
                             plugin.ShowAlert(r, Roulettes[r.RowId], PreferredRole.Healer);
                             plugin.ShowAlert(r, Roulettes[r.RowId], PreferredRole.DPS);
                         } catch (Exception ex) {
-                            PluginLog.LogError(ex.ToString());
+                            AdventurerInNeed.PluginLog.Error(ex.ToString());
                         }
                     }
                 }
