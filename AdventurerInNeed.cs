@@ -8,11 +8,10 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using Dalamud.IoC;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.GeneratedSheets;
+using InstanceContent = FFXIVClientStructs.FFXIV.Client.Game.UI.InstanceContent;
 
 namespace AdventurerInNeed {
     public class AdventurerInNeed : IDalamudPlugin {
@@ -34,7 +33,7 @@ namespace AdventurerInNeed {
         [PluginService] public static IDataManager Data { get; private set; } = null!;
         [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
         [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
-        [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
+        [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
         [PluginService] public static IGameInteropProvider HookProvider { get; private set; } = null!;
         [PluginService] public static IPluginLog PluginLog { get; private set; } = null!;
 
@@ -190,7 +189,7 @@ namespace AdventurerInNeed {
 
         public unsafe bool IsRouletteComplete(ContentRoulette roulette) {
             if (roulette.RowId > byte.MaxValue) return false;
-            var rouletteController = RouletteController.Instance();
+            var rouletteController = InstanceContent.Instance();
             return rouletteController->IsRouletteComplete((byte)roulette.RowId);
         }
         
