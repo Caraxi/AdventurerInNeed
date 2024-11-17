@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Text;
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility;
 
 namespace AdventurerInNeed {
@@ -45,8 +47,8 @@ namespace AdventurerInNeed {
 
             var modified = false;
 
-            ImGui.SetNextWindowSize(new Vector2(420 * scale, 350), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSizeConstraints(new Vector2(420 * scale, 350), new Vector2(640 * scale, 650));
+            ImGui.SetNextWindowSize(new Vector2(420 * scale, 350 * scale), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSizeConstraints(new Vector2(420 * scale, 350 * scale), new Vector2(640 * scale, 650 * scale));
             ImGui.Begin($"{plugin.Name} Config", ref drawConfig, ImGuiWindowFlags.NoCollapse);
 
 #if DEBUG
@@ -58,7 +60,7 @@ namespace AdventurerInNeed {
 
             if (ImGui.Button("Debug: Print All Alerts")) {
                 foreach (var r in plugin.RouletteList) {
-                    if (r.ContentRouletteRoleBonus.Row > 0) {
+                    if (r.ContentRouletteRoleBonus.RowId > 0) {
                         try {
                             plugin.ShowAlert(r, Roulettes[r.RowId], PreferredRole.Tank);
                             plugin.ShowAlert(r, Roulettes[r.RowId], PreferredRole.Healer);
@@ -128,8 +130,9 @@ namespace AdventurerInNeed {
             ImGui.Separator();
 
             if (plugin.RouletteList != null) {
-                foreach (var r in plugin.RouletteList.Where(r => r != null && r.ContentRouletteRoleBonus != null && r.ContentRouletteRoleBonus.Row > 0)) {
-                    var rCfg = Roulettes.ContainsKey(r.RowId) ? Roulettes[r.RowId] : new RouletteConfig();
+                
+                foreach (var r in plugin.RouletteList.Where(r => r.RowId != 0 && r.ContentRouletteRoleBonus.RowId != 0)) {
+                    var rCfg = Roulettes.TryGetValue(r.RowId, out var value) ? value : new RouletteConfig();
                     
                     var name = r.Name.ToDalamudString().TextValue
                         .Replace("Duty Roulette: ", "")
@@ -141,29 +144,48 @@ namespace AdventurerInNeed {
                     if (ImGui.IsItemHovered()) {
                         ImGui.SetTooltip($"Enable alerts for '{name}'.");
                     }
+
+
+                    var e = rCfg.Enabled && (rCfg.Tank || rCfg.Healer || rCfg.DPS) && (InGameAlert);
                     
-                    ImGui.SameLine();
-                    modified = ImGui.Checkbox($"###rouletteIncompleteOnly{r.RowId}", ref rCfg.OnlyIncomplete) || modified;
-                    if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip($"Only show alerts if roulette has not been completed today.");
-                    }
+                    using var textColor = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudGrey3, !e);
+                    using var checkMarkColor = ImRaii.PushColor(ImGuiCol.CheckMark, ImGuiColors.DalamudGrey3, !e);
 
                     ImGui.NextColumn();
 
                     ImGui.Text(name);
                     ImGui.NextColumn();
                     modified = ImGui.Checkbox($"###rouletteTankEnabled{r.RowId}", ref rCfg.Tank) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Show alerts when roulette changes to tank bonus.");
+                    }
                     ImGui.NextColumn();
                     modified = ImGui.Checkbox($"###rouletteHealerEnabled{r.RowId}", ref rCfg.Healer) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Show alerts when roulette changes to healer bonus.");
+                    }
                     ImGui.NextColumn();
                     modified = ImGui.Checkbox($"###rouletteDPSEnabled{r.RowId}", ref rCfg.DPS) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Show alerts when roulette changes to DPS bonus.");
+                    }
                     ImGui.NextColumn();
 
+                   
+                    
+                    modified = ImGui.Checkbox($"###rouletteIncompleteOnly{r.RowId}", ref rCfg.OnlyIncomplete) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Only show alerts if roulette has not been completed today.");
+                    }
+                    
+                    ImGui.SameLine();
+                    
                     ImGui.Text(plugin.IsRouletteComplete(r) ? "Yes" : "No");
+                    
                     ImGui.NextColumn();
                     
                     if (plugin.LastPreferredRoleList != null) {
-                        var currentRole = plugin.LastPreferredRoleList.Get(r.ContentRouletteRoleBonus.Row);
+                        var currentRole = plugin.LastPreferredRoleList.Get(r.ContentRouletteRoleBonus.RowId);
                         ImGui.Text(currentRole.ToString());
                     }
 
@@ -175,6 +197,11 @@ namespace AdventurerInNeed {
             }
             
             ImGui.Columns(1);
+            
+            
+            
+            
+            
 
             ImGui.End();
 

@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Linq;
+using System.Runtime.InteropServices;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace AdventurerInNeed {
     internal enum PreferredRole : byte {

@@ -10,7 +10,8 @@ using Dalamud.Hooking;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Lumina.Excel.GeneratedSheets;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using Lumina.Excel.Sheets;
 using InstanceContent = FFXIVClientStructs.FFXIV.Client.Game.UI.InstanceContent;
 
 namespace AdventurerInNeed {
@@ -48,7 +49,7 @@ namespace AdventurerInNeed {
             this.PluginConfig = (AdventurerInNeedConfig) PluginInterface.GetPluginConfig() ?? new AdventurerInNeedConfig();
             this.PluginConfig.Init(this);
 
-            var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 70 E8 ?? ?? ?? ?? E9");
+            var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4B 78 E8 ?? ?? ?? ?? 0F B6 4B 3C");
 
             if (cfPreferredRolePtr == IntPtr.Zero) {
                 PluginLog.Error("Failed to hook the cfPreferredRoleChange method.");
@@ -82,15 +83,16 @@ namespace AdventurerInNeed {
 #endif
             LastPreferredRoleList ??= preferredRoleList;
 
-            foreach (var roulette in RouletteList.Where(roulette => roulette.ContentRouletteRoleBonus.Row != 0)) {
+            foreach (var roulette in RouletteList.Where(roulette => roulette.ContentRouletteRoleBonus.RowId != 0)) {
                 try {
                     var rouletteConfig = PluginConfig.Roulettes[roulette.RowId];
                     if (!rouletteConfig.Enabled) continue;
 
-                    var role = preferredRoleList.Get(roulette.ContentRouletteRoleBonus.Row);
-                    var oldRole = LastPreferredRoleList.Get(roulette.ContentRouletteRoleBonus.Row);
+                    var role = preferredRoleList.Get(roulette.ContentRouletteRoleBonus.RowId);
+                    var oldRole = LastPreferredRoleList.Get(roulette.ContentRouletteRoleBonus.RowId);
 
 #if DEBUG
+                    
                     PluginLog.Info($"{roulette.Name}: {oldRole} => {role}");
 
                     if (role != oldRole || PluginConfig.AlwaysShowAlert) {
@@ -109,8 +111,6 @@ namespace AdventurerInNeed {
 #endif
                 }
             }
-
-            LastPreferredRoleList = preferredRoleList;
         }
 
         internal void ShowAlert(ContentRoulette roulette, RouletteConfig config, PreferredRole role) {
@@ -143,7 +143,7 @@ namespace AdventurerInNeed {
 
                 var payloads = new Payload[] {
                     new UIForegroundPayload(500),
-                    new TextPayload(roulette.Name),
+                    new TextPayload(roulette.Name.ExtractText()),
                     new UIForegroundPayload(0),
                     new TextPayload(" needs a "),
                     new IconPayload(icon),
