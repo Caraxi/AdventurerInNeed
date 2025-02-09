@@ -111,6 +111,8 @@ namespace AdventurerInNeed {
 #endif
                 }
             }
+
+            LastPreferredRoleList = preferredRoleList;
         }
 
         internal void ShowAlert(ContentRoulette roulette, RouletteConfig config, PreferredRole role) {
