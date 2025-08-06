@@ -10,6 +10,8 @@ using Dalamud.Hooking;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
 using InstanceContent = FFXIVClientStructs.FFXIV.Client.Game.UI.InstanceContent;
 
@@ -23,7 +25,7 @@ namespace AdventurerInNeed {
 
         public List<ContentRoulette> RouletteList;
 
-        private delegate IntPtr CfPreferredRoleChangeDelegate(IntPtr data);
+        private delegate IntPtr CfPreferredRoleChangeDelegate(nint agent, nint data, uint size);
 
         private Hook<CfPreferredRoleChangeDelegate> cfPreferredRoleChangeHook;
 
@@ -48,7 +50,7 @@ namespace AdventurerInNeed {
             this.PluginConfig = (AdventurerInNeedConfig) PluginInterface.GetPluginConfig() ?? new AdventurerInNeedConfig();
             this.PluginConfig.Init(this);
 
-            var cfPreferredRolePtr = SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8D 4E 78 E8 ?? ?? ?? ?? 0F B6 4E 3C");
+            var cfPreferredRolePtr = SigScanner.ScanText("48 89 4C 24 ?? 55 41 56 48 83 EC 38");
 
             if (cfPreferredRolePtr == IntPtr.Zero) {
                 PluginLog.Error("Failed to hook the cfPreferredRoleChange method.");
@@ -71,9 +73,9 @@ namespace AdventurerInNeed {
             SetupCommands();
         }
 
-        private IntPtr CfPreferredRoleChangeDetour(IntPtr data) {
+        private IntPtr CfPreferredRoleChangeDetour(nint agent, nint data, uint size) {
             UpdatePreferredRoleList(Marshal.PtrToStructure<PreferredRoleList>(data));
-            return cfPreferredRoleChangeHook.Original(data);
+            return cfPreferredRoleChangeHook.Original(agent, data, size);
         }
 
         private void UpdatePreferredRoleList(PreferredRoleList preferredRoleList) {

@@ -16,7 +16,7 @@
     </PropertyGroup>
     <PropertyGroup Label="Feature">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>1.5.0.3</Version>
+        <Version>1.5.0.4</Version>
     </PropertyGroup>
     <PropertyGroup>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -24,7 +24,7 @@
 		<DalamudLibPath>$(AppData)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="DalamudPackager" Version="12.0.0" />
+        <PackageReference Include="DalamudPackager" Version="13.0.0" />
 		<Reference Include="Dalamud">
             <Private>false</Private>
 			<HintPath>$(DalamudLibPath)\Dalamud.dll</HintPath>
@@ -33,9 +33,13 @@
             <Private>false</Private>
 			<HintPath>$(DalamudLibPath)\FFXIVClientStructs.dll</HintPath>
 		</Reference>
-		<Reference Include="ImGui.NET">
+		<Reference Include="Dalamud.Bindings.ImGui">
             <Private>false</Private>
-			<HintPath>$(DalamudLibPath)\ImGui.NET.dll</HintPath>
+			<HintPath>$(DalamudLibPath)\Dalamud.Bindings.ImGui.dll</HintPath>
+		</Reference>
+        <Reference Include="Dalamud.Bindings.ImPlot">
+            <Private>false</Private>
+			<HintPath>$(DalamudLibPath)\Dalamud.Bindings.ImPlot.dll</HintPath>
 		</Reference>
 		<Reference Include="Lumina">
             <Private>false</Private>
