@@ -1,129 +1,109 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using Dalamud.Game;
+using System.Threading;
+using System.Timers;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Hooking;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using Lumina.Excel.Sheets;
+using ContentRoulette = Lumina.Excel.Sheets.ContentRoulette;
 using InstanceContent = FFXIVClientStructs.FFXIV.Client.Game.UI.InstanceContent;
 
 namespace AdventurerInNeed {
     public class AdventurerInNeed : IDalamudPlugin {
         public string Name => "Adventurer in Need";
+        private readonly ConfigWindow _configWindow;
+        private readonly WindowSystem _windowSystem = new(nameof(AdventurerInNeed));
 
         public AdventurerInNeedConfig PluginConfig { get; private set; }
 
-        private bool drawConfigWindow;
+        public readonly List<ContentRoulette> RouletteList;
 
-        public List<ContentRoulette> RouletteList;
-
-        private delegate IntPtr CfPreferredRoleChangeDelegate(nint agent, nint data, uint size);
-
-        private Hook<CfPreferredRoleChangeDelegate> cfPreferredRoleChangeHook;
-
-        internal PreferredRoleList LastPreferredRoleList;
-
-        [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
-        [PluginService] public static IDataManager Data { get; private set; } = null!;
+        internal ContentsRouletteRole[]? LastPreferredRoleList;
+        
         [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
         [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
-        [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
-        [PluginService] public static IGameInteropProvider HookProvider { get; private set; } = null!;
         [PluginService] public static IPluginLog PluginLog { get; private set; } = null!;
 
+
+        private IClientState _clientState;
+        private IFramework _framework;
+
+        private CancellationTokenSource _pluginLifespan = new CancellationTokenSource();
+
         public void Dispose() {
-            PluginInterface.UiBuilder.Draw -= this.BuildUI;
-            cfPreferredRoleChangeHook?.Disable();
-            cfPreferredRoleChangeHook?.Dispose();
+            _pluginLifespan.Cancel();
             RemoveCommands();
         }
 
-        public AdventurerInNeed() {
-            this.PluginConfig = (AdventurerInNeedConfig) PluginInterface.GetPluginConfig() ?? new AdventurerInNeedConfig();
-            this.PluginConfig.Init(this);
+        public AdventurerInNeed(IDalamudPluginInterface pluginInterface, IDataManager data, IClientState clientState, IFramework framework) {
+            _clientState = clientState;
+            _framework = framework;
+            
+            PluginConfig = pluginInterface.GetPluginConfig() as AdventurerInNeedConfig ?? new AdventurerInNeedConfig();
+            
+            _configWindow = new ConfigWindow(this, pluginInterface);
+            _windowSystem.AddWindow(_configWindow);
 
-            var cfPreferredRolePtr = SigScanner.ScanText("48 89 4C 24 ?? 55 41 56 48 83 EC 38");
-
-            if (cfPreferredRolePtr == IntPtr.Zero) {
-                PluginLog.Error("Failed to hook the cfPreferredRoleChange method.");
-                return;
-            }
-
-#if DEBUG
-            drawConfigWindow = true;
-#endif
-
-            PluginInterface.UiBuilder.OpenConfigUi += () => {
-                this.drawConfigWindow = true;
+            pluginInterface.UiBuilder.OpenConfigUi += () => {
+                _configWindow.Toggle();
             };
 
-            RouletteList = Data.GetExcelSheet<ContentRoulette>()!.ToList();
-            cfPreferredRoleChangeHook = HookProvider.HookFromAddress<CfPreferredRoleChangeDelegate>(cfPreferredRolePtr, CfPreferredRoleChangeDetour);
-            cfPreferredRoleChangeHook.Enable();
-            PluginInterface.UiBuilder.Draw += this.BuildUI;
+            RouletteList = data.GetExcelSheet<ContentRoulette>().ToList();
 
+            pluginInterface.UiBuilder.Draw += _windowSystem.Draw;
+            
+            framework.RunOnTick(UpdatePreferredRoleList);
+            
             SetupCommands();
         }
 
-        private IntPtr CfPreferredRoleChangeDetour(nint agent, nint data, uint size) {
-            UpdatePreferredRoleList(Marshal.PtrToStructure<PreferredRoleList>(data));
-            return cfPreferredRoleChangeHook.Original(agent, data, size);
-        }
-
-        private void UpdatePreferredRoleList(PreferredRoleList preferredRoleList) {
+        private unsafe void UpdatePreferredRoleList() {
+            if (_pluginLifespan.IsCancellationRequested) return;
+            _framework.RunOnTick(UpdatePreferredRoleList, TimeSpan.FromSeconds(5), cancellationToken: _pluginLifespan.Token);
+            if (!_clientState.IsLoggedIn) return;     
+            
 #if DEBUG
-            PluginLog.Info("Updating Preferred Role List");
+            PluginLog.Debug("Updating Preferred Role List");
 #endif
+            var agent = AgentContentsFinder.Instance();
+            var preferredRoleList = agent->ContentRouletteRoleBonuses.ToArray();
             LastPreferredRoleList ??= preferredRoleList;
 
             foreach (var roulette in RouletteList.Where(roulette => roulette.ContentRouletteRoleBonus.RowId != 0)) {
                 try {
                     var rouletteConfig = PluginConfig.Roulettes[roulette.RowId];
                     if (!rouletteConfig.Enabled) continue;
-
-                    var role = preferredRoleList.Get(roulette.ContentRouletteRoleBonus.RowId);
-                    var oldRole = LastPreferredRoleList.Get(roulette.ContentRouletteRoleBonus.RowId);
-
+                    var role = preferredRoleList[roulette.ContentRouletteRoleBonus.RowId];
+                    var oldRole = LastPreferredRoleList[roulette.ContentRouletteRoleBonus.RowId];
 #if DEBUG
-                    
-                    PluginLog.Info($"{roulette.Name}: {oldRole} => {role}");
-
-                    if (role != oldRole || PluginConfig.AlwaysShowAlert) {
-#else
-                    if (role != oldRole) {
+                    PluginLog.Verbose($"{roulette.Name}: {oldRole} => {role}");
 #endif
+                    if (role != oldRole) {
                         ShowAlert(roulette, rouletteConfig, role);
                     }
-
-#if DEBUG
                 } catch (Exception ex) {
                     PluginLog.Error(ex.ToString());
-#else
-                } catch {
-                    // Ignored
-#endif
                 }
             }
 
             LastPreferredRoleList = preferredRoleList;
         }
 
-        internal void ShowAlert(ContentRoulette roulette, RouletteConfig config, PreferredRole role) {
+        internal void ShowAlert(ContentRoulette roulette, RouletteConfig config, ContentsRouletteRole role) {
             if (!config.Enabled) return;
             if (config.OnlyIncomplete && IsRouletteComplete(roulette)) return;
 
             var doAlert = role switch {
-                PreferredRole.Tank => config.Tank,
-                PreferredRole.Healer => config.Healer,
-                PreferredRole.DPS => config.DPS,
+                ContentsRouletteRole.Tank => config.Tank,
+                ContentsRouletteRole.Healer => config.Healer,
+                ContentsRouletteRole.Dps => config.DPS,
                 _ => false
             };
 
@@ -131,16 +111,16 @@ namespace AdventurerInNeed {
 
             if (PluginConfig.InGameAlert) {
                 ushort roleForegroundColor = role switch {
-                    PreferredRole.Tank => 37,
-                    PreferredRole.Healer => 504,
-                    PreferredRole.DPS => 545,
+                    ContentsRouletteRole.Tank => 37,
+                    ContentsRouletteRole.Healer => 504,
+                    ContentsRouletteRole.Dps => 545,
                     _ => 0,
                 };
 
                 var icon = role switch {
-                    PreferredRole.Tank => BitmapFontIcon.Tank,
-                    PreferredRole.Healer => BitmapFontIcon.Healer,
-                    PreferredRole.DPS => BitmapFontIcon.DPS,
+                    ContentsRouletteRole.Tank => BitmapFontIcon.Tank,
+                    ContentsRouletteRole.Healer => BitmapFontIcon.Healer,
+                    ContentsRouletteRole.Dps => BitmapFontIcon.DPS,
                     _ => BitmapFontIcon.Warning
                 };
 
@@ -164,7 +144,7 @@ namespace AdventurerInNeed {
 
                 if (PluginConfig.ChatType != XivChatType.None) {
                     xivChat.Type = PluginConfig.ChatType;
-                    xivChat.Name = this.Name;
+                    xivChat.Name = Name;
                 }
 
                 ChatGui.Print(xivChat);
@@ -173,28 +153,24 @@ namespace AdventurerInNeed {
 
         public void SetupCommands() {
             CommandManager.AddHandler("/pbonus", new Dalamud.Game.Command.CommandInfo(OnConfigCommandHandler) {
-                HelpMessage = $"Open config window for {this.Name}",
+                HelpMessage = $"Open config window for {Name}",
                 ShowInHelp = true
             });
         }
 
         public void OnConfigCommandHandler(string command, string args) {
-            drawConfigWindow = !drawConfigWindow;
+            _configWindow.Toggle();
         }
 
         public void RemoveCommands() {
             CommandManager.RemoveHandler("/pbonus");
         }
-
-        private void BuildUI() {
-            drawConfigWindow = drawConfigWindow && PluginConfig.DrawConfigUI();
-        }
+        
 
         public unsafe bool IsRouletteComplete(ContentRoulette roulette) {
             if (roulette.RowId > byte.MaxValue) return false;
             var rouletteController = InstanceContent.Instance();
             return rouletteController->IsRouletteComplete((byte)roulette.RowId);
         }
-        
     }
 }
