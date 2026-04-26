@@ -4,9 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Timers;
+using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -30,6 +32,8 @@ namespace AdventurerInNeed {
         [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
         [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
         [PluginService] public static IPluginLog PluginLog { get; private set; } = null!;
+        [PluginService] public static IToastGui ToastGui { get; private set; } = null!;
+        [PluginService] public static INotificationManager NotificationManager { get; private set; } = null!;
 
 
         private IClientState _clientState;
@@ -148,6 +152,20 @@ namespace AdventurerInNeed {
                 }
 
                 ChatGui.Print(xivChat);
+            }
+
+            if (PluginConfig.ToastAlert) {
+                ToastGui.ShowQuest(
+                    $"{roulette.Name.ExtractText()} needs a {role}!",
+                    new QuestToastOptions());
+            }
+
+            if (PluginConfig.WindowsAlert) {
+                NotificationManager.AddNotification(new Notification {
+                    Title = "Adventurer in Need",
+                    Content = $"{roulette.Name.ExtractText()} needs a {role}!",
+                    Type = NotificationType.Info,
+                });
             }
         }
 

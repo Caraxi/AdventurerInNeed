@@ -77,6 +77,22 @@ public class ConfigWindow(AdventurerInNeed plugin, IDalamudPluginInterface plugi
                 ImGui.EndCombo();
             }
 
+            var toastAlert = Config.ToastAlert;
+            if (ImGui.Checkbox("Show Dalamud toast notification.", ref toastAlert)) {
+                Config.ToastAlert = toastAlert;
+                modified = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Shows a quest-style HUD toast when a role bonus changes.");
+
+            var windowsAlert = Config.WindowsAlert;
+            if (ImGui.Checkbox("Show Dalamud notification.", ref windowsAlert)) {
+                Config.WindowsAlert = windowsAlert;
+                modified = true;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Shows a Dalamud notification card when a role bonus changes.");
+
             ImGui.Separator();
             ImGui.Columns(7, "###cols", false);
             ImGui.SetColumnWidth(0, 60f * scale);
@@ -122,7 +138,7 @@ public class ConfigWindow(AdventurerInNeed plugin, IDalamudPluginInterface plugi
                     }
 
 
-                    var e = rCfg.Enabled && (rCfg.Tank || rCfg.Healer || rCfg.DPS) && (Config.InGameAlert);
+                    var e = rCfg.Enabled && (rCfg.Tank || rCfg.Healer || rCfg.DPS) && (Config.InGameAlert || Config.ToastAlert || Config.WindowsAlert);
                     
                     using var textColor = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudGrey3, !e);
                     using var checkMarkColor = ImRaii.PushColor(ImGuiCol.CheckMark, ImGuiColors.DalamudGrey3, !e);
