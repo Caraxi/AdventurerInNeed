@@ -155,9 +155,27 @@ namespace AdventurerInNeed {
             }
 
             if (PluginConfig.ToastAlert) {
-                ToastGui.ShowQuest(
-                    $"{roulette.Name.ExtractText()} needs a {role}!",
-                    new QuestToastOptions());
+                uint roleIconId = role switch {
+                    ContentsRouletteRole.Tank   => 62581u,
+                    ContentsRouletteRole.Healer => 62582u,
+                    ContentsRouletteRole.Dps    => 62583u,
+                    _                           => 0u,
+                };
+
+                var toastIcon = role switch {
+                    ContentsRouletteRole.Tank   => BitmapFontIcon.Tank,
+                    ContentsRouletteRole.Healer => BitmapFontIcon.Healer,
+                    ContentsRouletteRole.Dps    => BitmapFontIcon.DPS,
+                    _                           => BitmapFontIcon.Warning,
+                };
+
+                var toastMessage = new SeString(new Payload[] {
+                    new TextPayload($"{roulette.Name.ExtractText()} needs a "),
+                    new IconPayload(toastIcon),
+                    new TextPayload($"{role}!"),
+                });
+
+                ToastGui.ShowQuest(toastMessage, new QuestToastOptions { IconId = roleIconId });
             }
 
             if (PluginConfig.WindowsAlert) {
