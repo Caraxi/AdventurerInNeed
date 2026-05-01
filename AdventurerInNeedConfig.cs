@@ -23,6 +23,8 @@ namespace AdventurerInNeed {
         public Dictionary<uint, RouletteConfig> Roulettes { get; set; } = new();
         public int Version { get; set; }
         public bool InGameAlert { get; set; }
+        public bool ToastAlert { get; set; } = false;
+        public bool WindowsAlert { get; set; } = false;
         public XivChatType ChatType { get; set; } = XivChatType.SystemMessage;
     }
 }
